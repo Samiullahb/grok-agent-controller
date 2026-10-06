@@ -1,0 +1,30 @@
+name: Grok Agent
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task for Grok"
+        required: true
+        type: string
+      action:
+        description: "Workflow action"
+        required: true
+        default: "research"
+        type: choice
+        options: [research, ideas, script, analytics]
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Grok agent
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          TASK: ${{ inputs.task }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          python - <<'PY'
+          import os,json,urllib.request
+          payload=json.dumps({"messages":[{"role":"system","content":"You are a YouTube automation research and production agent. Return concise, actionable results."},{"role":"user","content":f"Action: {os.environ['ACTION']}\nTask: {os.environ['TASK']}"}],"model":"grok-4-1-fast-reasoning"}).encode()
+          req=urllib.request.Request("https://api.x.ai/v1/chat/completions",data=payload,headers={"Authorization":"Bearer "+os.environ["XAI_API_KEY"],"Content-Type":"application/json"},method="POST")
+          with urllib.request.urlopen(req) as r: print(json.loads(r.read())["choices"][0]["message"]["content"])
+          PY
